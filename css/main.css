@@ -93,8 +93,32 @@ textarea {
    Author's custom styles
    ========================================================================== */
 
+#main {
+  width: 1000px;
+  margin: 0 auto;
+}
 
+#board-wrapper {
+  text-align: center;
+}
 
+h1 {
+  text-align: center;
+}
+
+canvas {
+  border: 1px solid #aaa;
+}
+
+#controls {
+  text-align: center;
+  padding: 0;
+}
+
+#controls li {
+  display: inline-block;
+  margin-right: 5px;
+}
 
 
 
