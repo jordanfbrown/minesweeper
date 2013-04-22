@@ -98,12 +98,12 @@ textarea {
   margin: 0 auto;
 }
 
-#board-wrapper {
+#board-wrapper, h1, #timer {
   text-align: center;
 }
 
-h1 {
-  text-align: center;
+#timer {
+  margin-bottom: 10px;
 }
 
 canvas {

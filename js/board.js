@@ -65,6 +65,21 @@ Minesweeper.Game = (function() {
       }
 
       this.renderBoard();
+      this.startTimer();
+    },
+
+    startTimer: function() {
+      if(this.timer) {
+        clearInterval(this.timer);
+      }
+
+      var seconds = 0;
+      var $timeElapsed = $('#time-elapsed');
+
+      $timeElapsed.text(seconds);
+      this.timer = setInterval(function() {
+        $timeElapsed.text(++seconds);
+      }, 1000);
     },
 
     renderBoard: function() {
@@ -140,6 +155,8 @@ Minesweeper.Game = (function() {
 
 
     gameOver: function() {
+      clearInterval(this.timer);
+
       for(var y = 0; y < this.rows; y++) {
         for(var x = 0; x < this.columns; x++) {
           if(this.board[y][x] == this.TILE_TYPES.MINE) {
