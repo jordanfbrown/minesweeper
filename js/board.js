@@ -7,10 +7,9 @@ Minesweeper.Game = (function() {
     this.columns = 8;
     this.numMines = 10;
     this.board = [];
+    this.revealed = [];
     this.TILE_TYPES = {
-      MINE: 'M',
-      NUMBER: 'number',
-      EMPTY: 'empty'
+      MINE: 'M'
     };
     this.cellWidth = this.width / this.columns;
     this.$board = $('#board');
@@ -18,7 +17,6 @@ Minesweeper.Game = (function() {
     this.bindEvents();
     this.setWidthAndHeight();
     this.createBoard();
-    this.renderBoard();
   };
 
   Game.prototype = {
@@ -32,8 +30,11 @@ Minesweeper.Game = (function() {
     generateMinePositions: function() {
       var positions = [], row, column;
 
-      for(var i = 0; i < this.numMines; i++) {
-        positions = this.addMinePosition(positions);
+      while(positions.length < this.numMines) {
+        var position = Math.floor(Math.random() * this.rows * this.columns - 1) + 1;
+        if(!_.include(positions, position)) {
+          positions.push(position);
+        }
       }
 
       return _.map(positions, function(position) {
@@ -43,21 +44,11 @@ Minesweeper.Game = (function() {
       }, this);
     },
 
-    addMinePosition: function(positions) {
-      var position = Math.floor(Math.random() * this.rows * this.columns - 1) + 1;
-      if(!_.include(positions, position)) {
-        positions.push(position);
-      }
-      else {
-        this.addMinePosition(positions);
-      }
-
-      return positions;
-    },
-
     createBoard: function() {
+      this.context.fillRect(0, 0, this.height, this.width);
       for(var y = 0; y < this.rows; y++) {
         this.board[y] = [];
+        this.revealed[y] = [];
       }
 
       _.each(this.generateMinePositions(), function(position) {
@@ -66,11 +57,14 @@ Minesweeper.Game = (function() {
 
       for(var y = 0; y < this.rows; y++) {
         for(var x = 0; x < this.columns; x++) {
+          this.revealed[y][x] = false;
           if(!this.board[y][x]) {
             this.board[y][x] = this.calculateNumberForTile(y, x);
           }
         }
       }
+
+      this.renderBoard();
     },
 
     renderBoard: function() {
@@ -89,14 +83,23 @@ Minesweeper.Game = (function() {
       this.context.strokeRect(this.cellWidth * x, this.cellWidth * y, this.cellWidth, this.cellWidth);
     },
 
-    bindEvents: function() {
-      this.$board.on('click', _.bind(this.handleClick, this));
-      $('#new').on('click', _.bind(this.newGame, this));
+    drawCircle: function(x, y) {
+      var centerX = x * this.cellWidth + this.cellWidth / 2;
+      var centerY = y * this.cellWidth + this.cellWidth / 2;
+      var radius = this.cellWidth / 4;
+
+      this.context.beginPath();
+      this.context.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+      this.context.fillStyle = 'red';
+      this.context.fill();
+      this.context.lineWidth = 2;
+      this.context.strokeStyle = '#000';
+      this.context.stroke();
     },
 
-    newGame: function() {
-      this.createBoard();
-      this.renderBoard();
+    bindEvents: function() {
+      this.$board.on('click', _.bind(this.handleClick, this));
+      $('#new').on('click', _.bind(this.createBoard, this));
     },
 
     handleClick: function(e) {
@@ -112,15 +115,31 @@ Minesweeper.Game = (function() {
     },
 
     revealTile: function(x, y) {
-      this.context.fillStyle = '#eee';
-      this.drawTile(x, y);
-      this.context.strokeText(this.board[y][x], this.cellWidth * x + this.cellWidth / 2 - 4, this.cellWidth * y + this.cellWidth / 2);
+      if(!this.revealed[y][x]) {
+        this.revealed[y][x] = true;
+
+        this.context.fillStyle = '#eee';
+        this.drawTile(x, y);
+        if(this.board[y][x] === this.TILE_TYPES.MINE) {
+          this.drawCircle(x, y);
+        }
+        else if(this.board[y][x] === 0) {
+          for(var i = -1; i <= 1; i++) {
+            for(var j = -1; j <= 1; j++) {
+              if(this.board[y + i] !== undefined && this.board[y + i][x + j] !== undefined) {
+                this.revealTile(x + j, y + i);
+              }
+            }
+          }
+        }
+        else {
+          this.context.strokeText(this.board[y][x], this.cellWidth * x + this.cellWidth / 2 - 4, this.cellWidth * y + this.cellWidth / 2 + 4);
+        }
+      }
     },
 
-    gameOver: function() {
-//      this.context.fillStyle = '#fff';
-//      this.context.fillRect(0, 0, this.height, this.width);
 
+    gameOver: function() {
       for(var y = 0; y < this.rows; y++) {
         for(var x = 0; x < this.columns; x++) {
           if(this.board[y][x] == this.TILE_TYPES.MINE) {
@@ -128,7 +147,6 @@ Minesweeper.Game = (function() {
           }
         }
       }
-      this.context.strokeText('Game over!', this.width / 2 - 30, this.height / 2);
     },
 
     calculateNumberForTile: function(row, column) {
@@ -142,6 +160,7 @@ Minesweeper.Game = (function() {
       }
       return number;
     }
+
   };
 
   return Game;
