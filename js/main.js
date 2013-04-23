@@ -1,1 +1,3 @@
 window.Minesweeper = {};
+
+Minesweeper.Renderer = {};

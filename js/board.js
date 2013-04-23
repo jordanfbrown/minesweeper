@@ -1,6 +1,5 @@
 Minesweeper.Game = (function() {
   var Game = function() {
-    this.context = document.getElementById('board').getContext('2d');
     this.height = 200;
     this.width = 200;
     this.rows = 8;
@@ -13,6 +12,13 @@ Minesweeper.Game = (function() {
     };
     this.cellWidth = this.width / this.columns;
     this.$board = $('#board');
+    this.renderer = new Minesweeper.Renderer.Canvas({
+      height: this.height,
+      width: this.width,
+      rows: this.rows,
+      columns: this.columns,
+      cellWidth: this.cellWidth
+    });
 
     this.bindEvents();
     this.setWidthAndHeight();
@@ -45,7 +51,6 @@ Minesweeper.Game = (function() {
     },
 
     createBoard: function() {
-      this.context.fillRect(0, 0, this.height, this.width);
       for(var y = 0; y < this.rows; y++) {
         this.board[y] = [];
         this.revealed[y] = [];
@@ -66,6 +71,7 @@ Minesweeper.Game = (function() {
 
       this.renderBoard();
       this.startTimer();
+      this.playing = true;
     },
 
     startTimer: function() {
@@ -83,33 +89,13 @@ Minesweeper.Game = (function() {
     },
 
     renderBoard: function() {
-      this.context.fillStyle = '#aaa';
-      this.context.strokeStyle = '#000';
+      this.renderer.clearBoard();
 
       for(var y = 0; y < this.rows; y++) {
         for(var x = 0; x < this.columns; x++) {
-          this.drawTile(x, y);
+          this.renderer.drawTile(x, y, '#aaa', '#000');
         }
       }
-    },
-
-    drawTile: function(x, y) {
-      this.context.fillRect(this.cellWidth * x, this.cellWidth * y, this.cellWidth, this.cellWidth);
-      this.context.strokeRect(this.cellWidth * x, this.cellWidth * y, this.cellWidth, this.cellWidth);
-    },
-
-    drawCircle: function(x, y) {
-      var centerX = x * this.cellWidth + this.cellWidth / 2;
-      var centerY = y * this.cellWidth + this.cellWidth / 2;
-      var radius = this.cellWidth / 4;
-
-      this.context.beginPath();
-      this.context.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
-      this.context.fillStyle = 'red';
-      this.context.fill();
-      this.context.lineWidth = 2;
-      this.context.strokeStyle = '#000';
-      this.context.stroke();
     },
 
     bindEvents: function() {
@@ -118,25 +104,26 @@ Minesweeper.Game = (function() {
     },
 
     handleClick: function(e) {
-      var x = Math.floor((e.pageX - this.$board.offset().left) / this.cellWidth);
-      var y = Math.floor((e.pageY - this.$board.offset().top) / this.cellWidth);
+      if(this.playing) {
+        var x = Math.floor((e.pageX - this.$board.offset().left) / this.cellWidth);
+        var y = Math.floor((e.pageY - this.$board.offset().top) / this.cellWidth);
 
-      if(this.board[y][x] == this.TILE_TYPES.MINE) {
-        this.gameOver();
-      }
-      else {
-        this.revealTile(x, y);
+        if(this.board[y][x] == this.TILE_TYPES.MINE) {
+          this.gameOver();
+        }
+        else {
+          this.revealTile(x, y);
+        }
       }
     },
 
     revealTile: function(x, y) {
       if(!this.revealed[y][x]) {
         this.revealed[y][x] = true;
+        this.renderer.drawTile(x, y, '#eee');
 
-        this.context.fillStyle = '#eee';
-        this.drawTile(x, y);
         if(this.board[y][x] === this.TILE_TYPES.MINE) {
-          this.drawCircle(x, y);
+          this.renderer.drawMine(x, y);
         }
         else if(this.board[y][x] === 0) {
           for(var i = -1; i <= 1; i++) {
@@ -148,13 +135,14 @@ Minesweeper.Game = (function() {
           }
         }
         else {
-          this.context.strokeText(this.board[y][x], this.cellWidth * x + this.cellWidth / 2 - 4, this.cellWidth * y + this.cellWidth / 2 + 4);
+          this.renderer.drawNumber(this.board[y][x], x, y);
         }
       }
     },
 
 
     gameOver: function() {
+      this.playing = false;
       clearInterval(this.timer);
 
       for(var y = 0; y < this.rows; y++) {
